@@ -1,5 +1,7 @@
 package br.unisc.view;
 
+import br.unisc.domain.NormaMachine;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -44,6 +46,10 @@ public class NormaSimulatorFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String programCode = codeEditor.getText();
+                String[] reg = {"A", "B", "C"};
+                NormaMachine nm = new NormaMachine(3,reg);
+                nm.setProgram(programCode.split("\n"));
+                nm.runProgram();
             }
         });
 

@@ -69,8 +69,8 @@ public class NormaMachine {
             case "se":
                 // se zero_a então vá_para 9 senão vá_para 2
                 String registerToTest = parts[2].split("_")[1];
-                int jumpIfZero = Integer.parseInt(parts[5]);
-                int jumpIfNotZero = Integer.parseInt(parts[8]);
+                int jumpIfZero = Integer.parseInt(parts[4]);
+                int jumpIfNotZero = Integer.parseInt(parts[7]);
 
                 if (isZero(registerToTest)) {
                     instructionPointer = jumpIfZero - 1; // -1 pois index começa em 0
@@ -79,25 +79,37 @@ public class NormaMachine {
                 }
                 break;
 
-            case "add":
-                String registerToAdd = parts[1].split("_")[1];
-                add(registerToAdd);
-                instructionPointer++;
-                break;
-
-            case "sub":
-                String registerToSub = parts[1].split("_")[1];
-                sub(registerToSub);
-                instructionPointer++;
-                break;
-
             case "vá_para":
-                int jumpTo = Integer.parseInt(parts[1]);
+                int jumpTo = Integer.parseInt(parts[2]);
                 instructionPointer = jumpTo - 1;
+                break;
+
+            case "faça":
+                executeOperation(parts[2]);
+                instructionPointer++;
                 break;
 
             default:
                 System.out.println("Instrução desconhecida: " + instruction);
+                break;
+        }
+    }
+
+    private void executeOperation(String operation) {
+        String[] opParts = operation.split("_");
+        String op = opParts[0].toUpperCase();
+        String reg = opParts[1].toUpperCase();
+
+        switch (op) {
+            case "ADD":
+                add(reg);
+                break;
+
+            case "SUB":
+                sub(reg);
+                break;
+
+            default:
                 break;
         }
     }
