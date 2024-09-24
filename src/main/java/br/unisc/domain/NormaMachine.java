@@ -1,19 +1,32 @@
 package br.unisc.domain;
 
+import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class NormaMachine {
+    private JTextArea output;
     private Map<String, Integer> registers;
-    private String[] program;
+    private Map<Integer, String> program;
+    private String comput = "";
     private int instructionPointer;
 
-    public NormaMachine(int numRegisters, String[] registerNames) {
+    public NormaMachine(JTextArea output) {
         registers = new HashMap<>();
-        for (String name : registerNames) {
-            registers.put(name, 0);
-        }
-        instructionPointer = 0;
+        instructionPointer = -1;
+        this.output = output;
+    }
+
+    public void initializeRegisters(String register, int value) {
+        registers.put(register, value);
+    }
+
+    public boolean hasRegisters() {
+        return !registers.isEmpty();
+    }
+
+    public void clearRegisters() {
+        registers.clear();
     }
 
     public void setRegisterValue(String register, int value) {
@@ -50,55 +63,44 @@ public class NormaMachine {
         }
     }
 
-    public void setProgram(String[] program) {
-        this.program = program;
+    public void setProgram(Map<Integer, String> labeledProgram) {
+        this.program = labeledProgram;
+    }
+
+    private void createComput() {
+        comput += "(" + instructionPointer + ", (";
+        for (Map.Entry<String, Integer> entry : registers.entrySet()) {
+            if (entry.equals(registers.entrySet().toArray()[registers.size() - 1])) {
+                comput += entry.getValue();
+                continue;
+            }
+
+            comput += entry.getValue() + ", ";
+        }
+        comput += "))\n";
     }
 
     public void runProgram() {
-        while (instructionPointer < program.length) {
-            String line = program[instructionPointer];
+        if (instructionPointer < 0) {
+            instructionPointer = program.keySet().iterator().next();
+        }
+
+        while (program.containsKey(instructionPointer)) {
+            String line = program.get(instructionPointer);
+            createComput();
             executeInstruction(line);
         }
-    }
+        createComput(); // VALOR FINAL, ROTULO INALCANCAVEL DO PROGRAMA
 
-    private void executeInstruction(String instruction) {
-        String[] parts = instruction.split(" ");
-        String command = parts[1]; // comando
-
-        switch (command) {
-            case "se":
-                // se zero_a então vá_para 9 senão vá_para 2
-                String registerToTest = parts[2].split("_")[1];
-                int jumpIfZero = Integer.parseInt(parts[4]);
-                int jumpIfNotZero = Integer.parseInt(parts[7]);
-
-                if (isZero(registerToTest)) {
-                    instructionPointer = jumpIfZero - 1; // -1 pois index começa em 0
-                } else {
-                    instructionPointer = jumpIfNotZero - 1;
-                }
-                break;
-
-            case "vá_para":
-                int jumpTo = Integer.parseInt(parts[2]);
-                instructionPointer = jumpTo - 1;
-                break;
-
-            case "faça":
-                executeOperation(parts[2]);
-                instructionPointer++;
-                break;
-
-            default:
-                System.out.println("Instrução desconhecida: " + instruction);
-                break;
-        }
+        output.setText(comput);
+        instructionPointer = -1;
+        comput = "";
     }
 
     private void executeOperation(String operation) {
         String[] opParts = operation.split("_");
-        String op = opParts[0].toUpperCase();
-        String reg = opParts[1].toUpperCase();
+        String op = opParts[0];
+        String reg = opParts[1];
 
         switch (op) {
             case "ADD":
@@ -114,42 +116,36 @@ public class NormaMachine {
         }
     }
 
-    public void macroMultiplicacao(String regA, String regB, String regResultado) {
-        setRegisterValue(regResultado, 0);
-        while (!isZero(regB)) {
-            add(regResultado);
-            sub(regB);
-        }
-    }
+    private void executeInstruction(String instruction) {
+        String[] parts = instruction.split(" ");
+        String command = parts[1];
 
-    public void macroDivisao(String regA, String regB, String regResultado) {
-        setRegisterValue(regResultado, 0);
-        while (!isZero(regA)) {
-            sub(regA);
-            if (!isZero(regA)) {
-                add(regResultado);
-                sub(regB);
-            }
-        }
-    }
+        switch (command) {
+            case "SE":
+                String registerToTest = parts[2].split("_")[1];
+                int jumpIfZero = Integer.parseInt(parts[5]);
+                int jumpIfNotZero = Integer.parseInt(parts[8]);
 
-    public boolean macroPrimo(String regA) {
-        if (getRegisterValue(regA) < 2) {
-            return false;
-        }
-        for (int i = 2; i < getRegisterValue(regA); i++) {
-            if (getRegisterValue(regA) % i == 0) {
-                return false;
-            }
-        }
-        return true;
-    }
+                if (isZero(registerToTest)) {
+                    instructionPointer = jumpIfZero;
+                } else {
+                    instructionPointer = jumpIfNotZero;
+                }
+                break;
 
-    public void macroPotencia(String regA, String regB, String regResultado) {
-        setRegisterValue(regResultado, 1);
-        while (!isZero(regB)) {
-            macroMultiplicacao(regResultado, regA, regResultado);
-            sub(regB);
+            case "FAÇA":
+                executeOperation(parts[2]);
+                instructionPointer = parts[3].equals("VÁ_PARA") ? Integer.parseInt(parts[4]) : instructionPointer + 1;
+                break;
+
+            case "VÁ_PARA":
+                int jumpTo = Integer.parseInt(parts[2]);
+                instructionPointer = jumpTo - 1;
+                break;
+
+            default:
+                System.out.println("Instrução desconhecida: " + instruction);
+                break;
         }
     }
 }
