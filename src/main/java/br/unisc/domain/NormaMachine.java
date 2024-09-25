@@ -1,6 +1,7 @@
 package br.unisc.domain;
 
 import javax.swing.*;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ public class NormaMachine {
     private Map<Integer, String> program;
     private String comput = "";
     private int instructionPointer;
+    private String macrosPath = "src/main/resources/macros/"; // TODO: parametrize this
 
     public NormaMachine(JTextArea output) {
         registers = new HashMap<>();
@@ -29,17 +31,17 @@ public class NormaMachine {
         registers.clear();
     }
 
-    public void setRegisterValue(String register, int value) {
-        if (registers.containsKey(register)) {
-            registers.put(register, value);
-            return;
-        }
-
-        System.out.println("Registrador " + register + " não existe!");
+    private void clearInstructionPointer() {
+        instructionPointer = -1;
     }
 
-    public int getRegisterValue(String register) {
-        return registers.getOrDefault(register, -1);
+    private void clearComput() {
+        comput = "";
+    }
+
+    private void registerDoesNotExist(String register) {
+        output.setText("ERR - Registrador " + register + " não existe!");
+        clearInstructionPointer();
     }
 
     public boolean isZero(String register) {
@@ -49,7 +51,9 @@ public class NormaMachine {
     public void add(String register) {
         if (registers.containsKey(register)) {
             registers.put(register, registers.get(register) + 1);
+            return;
         }
+        registerDoesNotExist(register);
     }
 
     public void sub(String register) {
@@ -59,7 +63,7 @@ public class NormaMachine {
                 return;
             }
 
-            System.out.println("Registrador " + register + " já está em 0!");
+            System.out.println("ERR - Registrador " + register + " já está em 0!");
         }
     }
 
@@ -74,7 +78,6 @@ public class NormaMachine {
                 comput += entry.getValue();
                 continue;
             }
-
             comput += entry.getValue() + ", ";
         }
         comput += "))\n";
@@ -90,11 +93,56 @@ public class NormaMachine {
             createComput();
             executeInstruction(line);
         }
-        createComput(); // VALOR FINAL, ROTULO INALCANCAVEL DO PROGRAMA
+        createComput();
 
-        output.setText(comput);
-        instructionPointer = -1;
-        comput = "";
+        if (!output.getText().startsWith("ERR")) {
+            output.setText(comput);
+        }
+        clearInstructionPointer();
+        clearComput();
+    }
+
+    private boolean checkMacros(String op) {
+        File macroFile = new File(macrosPath + op.toLowerCase() + ".norma");
+        if (macroFile.exists()) {
+            String[] content = readFile(macroFile);
+            if (content != null) {
+                int aux = instructionPointer; //armazena instructionPointer do programa principal para iniciar a exec da macro
+                String comp = comput;
+
+                clearInstructionPointer();
+                clearComput();
+
+                setProgram(NormaProgram.createMappedProgram(content));
+                runProgram();
+
+                instructionPointer = aux; // retorna a exec do programa principal
+                comput = comp;
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private String[] readFile(File macro) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(macro));
+            String content = "";
+            String line;
+
+            while ( (line = reader.readLine()) != null ) {
+                content += line + "\n";
+            }
+
+            return content.split("\n");
+
+        } catch (Exception e) {
+            output.setText("ERR - Erro ao ler arquivo de macro " + macro.getName());
+            return null;
+        }
     }
 
     private void executeOperation(String operation) {
@@ -103,16 +151,11 @@ public class NormaMachine {
         String reg = opParts[1];
 
         switch (op) {
-            case "ADD":
-                add(reg);
-                break;
-
-            case "SUB":
-                sub(reg);
-                break;
-
-            default:
-                break;
+            case "ADD" -> add(reg);
+            case "SUB" -> sub(reg);
+            default -> {
+                if (!checkMacros(operation)) output.setText("ERR - Operação desconhecida: " + operation);
+            }
         }
     }
 
@@ -121,31 +164,27 @@ public class NormaMachine {
         String command = parts[1];
 
         switch (command) {
-            case "SE":
+            case "SE" -> {
                 String registerToTest = parts[2].split("_")[1];
                 int jumpIfZero = Integer.parseInt(parts[5]);
                 int jumpIfNotZero = Integer.parseInt(parts[8]);
-
                 if (isZero(registerToTest)) {
                     instructionPointer = jumpIfZero;
                 } else {
                     instructionPointer = jumpIfNotZero;
                 }
-                break;
-
-            case "FAÇA":
+            }
+            case "FAÇA" -> {
                 executeOperation(parts[2]);
                 instructionPointer = parts[3].equals("VÁ_PARA") ? Integer.parseInt(parts[4]) : instructionPointer + 1;
-                break;
-
-            case "VÁ_PARA":
-                int jumpTo = Integer.parseInt(parts[2]);
-                instructionPointer = jumpTo - 1;
-                break;
-
-            default:
-                System.out.println("Instrução desconhecida: " + instruction);
-                break;
+            }
+            case "VÁ_PARA" -> {
+                instructionPointer = Integer.parseInt(parts[2]);
+            }
+            default -> {
+                output.setText("ERR - Instrução desconhecida: " + instruction);
+                clearInstructionPointer();
+            }
         }
     }
 }

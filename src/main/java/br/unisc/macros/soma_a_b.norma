@@ -1,0 +1,4 @@
+101: se zero_B então vá_para 109 senão vá_para 102
+102: faça add_A vá_para 103
+103: faça sub_B vá_para 101
+109: vá_para 2

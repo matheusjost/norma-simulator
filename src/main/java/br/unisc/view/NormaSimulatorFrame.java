@@ -1,13 +1,12 @@
 package br.unisc.view;
 
 import br.unisc.domain.NormaMachine;
+import br.unisc.domain.NormaProgram;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.Map;
 
 public class NormaSimulatorFrame extends JFrame {
 
@@ -78,7 +77,8 @@ public class NormaSimulatorFrame extends JFrame {
                     return;
                 }
 
-                machine.setProgram(createMappedProgram(programCode.split("\n")));
+                machine.setProgram(NormaProgram.createMappedProgram(programCode.split("\n")));
+                terminal.setText("");
                 machine.runProgram();
 
                 if (machine.hasRegisters()) {
@@ -108,18 +108,4 @@ public class NormaSimulatorFrame extends JFrame {
         setVisible(true);
     }
 
-    private Map<Integer, String> createMappedProgram(String[] program) {
-        Map<Integer, String> hash = new HashMap<>();
-
-        for (String line : program) {
-            if (line.contains(":")) {
-                String[] parts = line.split(":");
-                Integer label = Integer.parseInt(parts[0]);
-                String instruction = parts[1].toUpperCase();
-                hash.put(label, instruction);
-            }
-        }
-
-        return hash;
-    }
 }

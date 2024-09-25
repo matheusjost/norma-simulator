@@ -1,0 +1,6 @@
+201: se zero_B então vá_para 205 senão vá_para 202
+202: se zero_A então vá_para 205 senão vá_para 203
+203: faça sub_A vá_para 204
+204: faça sub_B vá_para 201
+205: se zero_A então vá_para 209 senão vá_para 206
+206: faça add_C vá_para 209
