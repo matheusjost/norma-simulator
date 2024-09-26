@@ -83,6 +83,7 @@ public class NormaSimulatorFrame extends JFrame {
 
                 if (machine.hasRegisters()) {
                     machine.clearRegisters();
+                    disableRunButton();
                 }
             }
         });
@@ -106,6 +107,10 @@ public class NormaSimulatorFrame extends JFrame {
         setLocationRelativeTo(null);
         pack();
         setVisible(true);
+    }
+
+    private void disableRunButton() {
+        runButton.setEnabled(false);
     }
 
 }

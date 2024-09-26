@@ -56,7 +56,12 @@ public class NormaMachine {
     }
 
     public boolean isZero(String register) {
-        return registers.get(register) == 0;
+        if (registers.containsKey(register)) {
+            return registers.get(register) == 0;
+        }
+
+        registerDoesNotExist(register);
+        return false;
     }
 
     public void add(String register) {
@@ -113,24 +118,62 @@ public class NormaMachine {
         clearComput();
     }
 
-    private boolean checkMacros(String op) {
-        File macroFile = new File(macrosPath + op.toLowerCase() + ".norma");
-        if (macroFile.exists()) {
-            String[] content = readFile(macroFile);
-            if (content != null) {
-                NormaMachineState state = saveState();
+    private File findMacroFile(String prefix) {
+       File dir = new File(macrosPath);
 
-                clearInstructionPointer();
-                clearComput();
+       if (!dir.exists() || !dir.isDirectory()) {
+           output.setText("ERR - Diretório de macros não encontrado!");
+           instructionPointer = -1;
+           return null;
+       }
 
-                setProgram(NormaProgram.createMappedProgram(content));
-                runProgram();
+       File[] files = dir.listFiles((dir1, name) -> name.toLowerCase().startsWith(prefix.toLowerCase()) && name.endsWith(".norma"));
 
-                restoreState(state);
-                return true;
-            }
+       if (files != null && files.length > 0) {
+           return files[0];
+       }
 
+       return null;
+    }
+
+    private boolean runMacro(String[] content) {
+        if (content == null) {
             return false;
+        }
+
+        NormaMachineState state = saveState();
+
+        clearInstructionPointer();
+        clearComput();
+
+        setProgram(NormaProgram.createMappedProgram(content));
+        runProgram();
+
+        restoreState(state);
+
+        return true;
+    }
+
+    private String[] interpretMacro(File macroFile) {
+        String macroFileName = macroFile.getName().split("\\.")[0];
+        String[] macroRegisters = macroFileName.split("_", 2)[1].toUpperCase().split("_");
+
+        String[] macroInstructions = readFile(macroFile);
+        if (macroInstructions == null) {
+            return null;
+        }
+
+        Map<String, String> mappedRegs = NormaProgram.interpretRegisters(registers.keySet().toArray(new String[0]), macroRegisters);
+        return NormaProgram.setInterpretedRegistersToInstruction(macroInstructions, mappedRegs);
+    }
+
+    private boolean checkMacros(String operation) {
+        String[] opParts = operation.split("_", 2);
+
+        File macroFile = findMacroFile(opParts[0]);
+        if (macroFile != null && macroFile.exists()) {
+            String[] macroInstructions = interpretMacro(macroFile);
+            return runMacro(macroInstructions);
         }
 
         return false;
