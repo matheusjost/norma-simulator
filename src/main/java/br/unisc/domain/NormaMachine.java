@@ -11,7 +11,7 @@ public class NormaMachine {
     private Map<Integer, String> program;
     private String comput = "";
     private int instructionPointer;
-    private String macrosPath = "src/main/resources/macros/"; // TODO: parametrize this
+    private String macrosPath = "src/main/resources/macros/";
 
     public NormaMachine(JTextArea output) {
         registers = new HashMap<>();
@@ -19,6 +19,8 @@ public class NormaMachine {
         this.output = output;
     }
 
+    public void setMacrosPath(String macrosPath) { this.macrosPath = macrosPath; }
+    
     private NormaMachineState saveState() {
         return new NormaMachineState(program, instructionPointer, comput);
     }
@@ -30,13 +32,9 @@ public class NormaMachine {
         return state;
     }
 
-    public void initializeRegisters(String register, int value) {
-        registers.put(register, value);
-    }
+    public void initializeRegisters(String register, int value) { registers.put(register, value); }
 
-    public boolean hasRegisters() {
-        return !registers.isEmpty();
-    }
+    public boolean hasRegisters() { return !registers.isEmpty(); }
 
     public void clearRegisters() {
         registers.clear();
@@ -180,8 +178,9 @@ public class NormaMachine {
     }
 
     private String[] readFile(File macro) {
+        BufferedReader reader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(macro));
+            reader = new BufferedReader(new FileReader(macro));
             String content = "";
             String line;
 
@@ -194,6 +193,14 @@ public class NormaMachine {
         } catch (Exception e) {
             output.setText("ERR - Erro ao ler arquivo de macro " + macro.getName());
             return null;
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    output.setText("ERR - Erro ao fechar o arquivo de macro " + macro.getName());
+                }
+            }
         }
     }
 
