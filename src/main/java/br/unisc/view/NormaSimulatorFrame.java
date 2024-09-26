@@ -29,43 +29,36 @@ public class NormaSimulatorFrame extends JFrame {
         JLabel registersLabel = new JLabel("Registradores:");
         JTextField registersInput = new JTextField(50);
         registersInput.setToolTipText("Ex: A=0,B=1,C=2");
-        JButton setRegistersButton = new JButton("Definir");
-        setRegistersButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String registers = registersInput.getText();
+        setRegistersButton.addActionListener(e -> {
+            String registers = registersInput.getText();
 
-                if (machine.hasRegisters()) {
-                    machine.clearRegisters();
-                }
+            if (machine.hasRegisters()) {
+                machine.clearRegisters();
+            }
 
-                if (!registers.matches("([A-Z]=[0-9],?)+")) {
-                    JOptionPane.showMessageDialog(null, "Entrada inválida! Utilize o formato LETRA=NUMERO,LETRA=NUMERO,LETRA=NUMERO");
-                    return;
-                }
+            if (!registers.matches("([A-Z]=[0-9],?)+")) {
+                JOptionPane.showMessageDialog(null, "Entrada inválida! Utilize o formato LETRA=NUMERO,LETRA=NUMERO,LETRA=NUMERO");
+                return;
+            }
 
-                String[] registersArray = registers.split(",");
-                for (String register : registersArray) {
-                    String[] registerParts = register.split("=");
-                    if (registerParts.length == 2) {
-                        machine.initializeRegisters(registerParts[0].toUpperCase(), Integer.parseInt(registerParts[1]));
-                        runButton.setEnabled(true);
-                    }
+            String[] registersArray = registers.split(",");
+            for (String register : registersArray) {
+                String[] registerParts = register.split("=");
+                if (registerParts.length == 2) {
+                    machine.initializeRegisters(registerParts[0].toUpperCase(), Integer.parseInt(registerParts[1]));
+                    runButton.setEnabled(true);
                 }
             }
         });
 
-        setMacrosButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
-                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                int result = fileChooser.showOpenDialog(null);
+        setMacrosButton.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int result = fileChooser.showOpenDialog(null);
 
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    machine.setMacrosPath(fileChooser.getSelectedFile().getAbsolutePath());
-                }
+            if (result == JFileChooser.APPROVE_OPTION) {
+                machine.setMacrosPath(fileChooser.getSelectedFile().getAbsolutePath());
             }
         });
 
@@ -83,25 +76,22 @@ public class NormaSimulatorFrame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(codeEditor);
 
         runButton.setEnabled(machine.hasRegisters());
-        runButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminal.setText("");
+        runButton.addActionListener(e -> {
+            terminal.setText("");
 
-                String programCode = codeEditor.getText();
-                if (programCode.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "O código do programa não pode ser vazio!");
-                    return;
-                }
+            String programCode = codeEditor.getText();
+            if (programCode.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "O código do programa não pode ser vazio!");
+                return;
+            }
 
-                machine.setProgram(NormaProgram.createMappedProgram(programCode.split("\n")));
-                terminal.setText("");
-                machine.runProgram();
+            machine.setProgram(NormaProgram.createMappedProgram(programCode.split("\n")));
+            terminal.setText("");
+            machine.runProgram();
 
-                if (machine.hasRegisters()) {
-                    machine.clearRegisters();
-                    disableRunButton();
-                }
+            if (machine.hasRegisters()) {
+                machine.clearRegisters();
+                disableRunButton();
             }
         });
 

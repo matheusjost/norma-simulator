@@ -40,6 +40,17 @@ public class NormaMachine {
         registers.clear();
     }
 
+    private boolean isInstructionPointerReset() {
+        return instructionPointer < 0;
+    }
+
+    private void setInstructionPointer(int instructionPointer) {
+        if (isInstructionPointerReset()) {
+            return;
+        }
+        this.instructionPointer = instructionPointer;
+    }
+
     private void clearInstructionPointer() {
         instructionPointer = -1;
     }
@@ -57,7 +68,6 @@ public class NormaMachine {
         if (registers.containsKey(register)) {
             return registers.get(register) == 0;
         }
-
         registerDoesNotExist(register);
         return false;
     }
@@ -121,7 +131,7 @@ public class NormaMachine {
 
        if (!dir.exists() || !dir.isDirectory()) {
            output.setText("ERR - Diretório de macros não encontrado!");
-           instructionPointer = -1;
+           setInstructionPointer(-1);
            return null;
        }
 
@@ -152,16 +162,17 @@ public class NormaMachine {
         return true;
     }
 
-    private String[] interpretMacro(File macroFile) {
+    private String[] interpretMacro(File macroFile, String op) {
         String macroFileName = macroFile.getName().split("\\.")[0];
         String[] macroRegisters = macroFileName.split("_", 2)[1].toUpperCase().split("_");
+        String[] opRegisters = op.split("_");
 
         String[] macroInstructions = readFile(macroFile);
         if (macroInstructions == null) {
             return null;
         }
 
-        Map<String, String> mappedRegs = NormaProgram.interpretRegisters(registers.keySet().toArray(new String[0]), macroRegisters);
+        Map<String, String> mappedRegs = NormaProgram.interpretRegisters(opRegisters, macroRegisters);
         return NormaProgram.setInterpretedRegistersToInstruction(macroInstructions, mappedRegs);
     }
 
@@ -170,7 +181,7 @@ public class NormaMachine {
 
         File macroFile = findMacroFile(opParts[0]);
         if (macroFile != null && macroFile.exists()) {
-            String[] macroInstructions = interpretMacro(macroFile);
+            String[] macroInstructions = interpretMacro(macroFile, opParts[1]);
             return runMacro(macroInstructions);
         }
 
@@ -228,17 +239,21 @@ public class NormaMachine {
                 int jumpIfZero = Integer.parseInt(parts[5]);
                 int jumpIfNotZero = Integer.parseInt(parts[8]);
                 if (isZero(registerToTest)) {
-                    instructionPointer = jumpIfZero;
+                    setInstructionPointer(jumpIfZero);
                 } else {
-                    instructionPointer = jumpIfNotZero;
+                    setInstructionPointer(jumpIfNotZero);
                 }
             }
             case "FAÇA" -> {
                 executeOperation(parts[2]);
-                instructionPointer = parts[3].equals("VÁ_PARA") ? Integer.parseInt(parts[4]) : instructionPointer + 1;
+                if (parts[3].equals("VÁ_PARA")) {
+                    setInstructionPointer(Integer.parseInt(parts[4]));
+                } else {
+                    instructionPointer++;
+                }
             }
             case "VÁ_PARA" -> {
-                instructionPointer = Integer.parseInt(parts[2]);
+                setInstructionPointer(Integer.parseInt(parts[2]));
             }
             default -> {
                 output.setText("ERR - Instrução desconhecida: " + instruction);
