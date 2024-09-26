@@ -20,6 +20,21 @@ public class NormaMachine {
     }
 
     public void setMacrosPath(String macrosPath) { this.macrosPath = macrosPath; }
+    
+    private NormaMachineState saveState() {
+        return new NormaMachineState(program, instructionPointer, comput);
+    }
+
+    private NormaMachineState restoreState(NormaMachineState state) {
+        program = state.program();
+        instructionPointer = state.instructionPointer();
+        comput = state.comput();
+        return state;
+    }
+
+    public void initializeRegisters(String register, int value) {
+        registers.put(register, value);
+    }
 
     public void initializeRegisters(String register, int value) { registers.put(register, value); }
 
@@ -105,8 +120,7 @@ public class NormaMachine {
         if (macroFile.exists()) {
             String[] content = readFile(macroFile);
             if (content != null) {
-                int aux = instructionPointer; //armazena instructionPointer do programa principal para iniciar a exec da macro
-                String comp = comput;
+                NormaMachineState state = saveState();
 
                 clearInstructionPointer();
                 clearComput();
@@ -114,8 +128,7 @@ public class NormaMachine {
                 setProgram(NormaProgram.createMappedProgram(content));
                 runProgram();
 
-                instructionPointer = aux; // retorna a exec do programa principal
-                comput = comp;
+                restoreState(state);
                 return true;
             }
 
