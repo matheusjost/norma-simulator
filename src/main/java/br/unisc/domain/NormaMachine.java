@@ -19,13 +19,11 @@ public class NormaMachine {
         this.output = output;
     }
 
-    public void initializeRegisters(String register, int value) {
-        registers.put(register, value);
-    }
+    public void setMacrosPath(String macrosPath) { this.macrosPath = macrosPath; }
 
-    public boolean hasRegisters() {
-        return !registers.isEmpty();
-    }
+    public void initializeRegisters(String register, int value) { registers.put(register, value); }
+
+    public boolean hasRegisters() { return !registers.isEmpty(); }
 
     public void clearRegisters() {
         registers.clear();
@@ -103,7 +101,7 @@ public class NormaMachine {
     }
 
     private boolean checkMacros(String op) {
-        File macroFile = new File(macrosPath + op.toLowerCase() + ".norma");
+        File macroFile = new File(macrosPath + "\\" + op.toLowerCase() + ".norma");
         if (macroFile.exists()) {
             String[] content = readFile(macroFile);
             if (content != null) {

@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 public class NormaSimulatorFrame extends JFrame {
 
@@ -14,6 +15,7 @@ public class NormaSimulatorFrame extends JFrame {
     private JButton runButton = new JButton("Executar");
     private JButton setRegistersButton = new JButton("Definir");
     private JTextArea terminal = new JTextArea(10,100);
+    private JButton setMacrosButton = new JButton("Definir diretório das macros");
 
     public NormaSimulatorFrame() {
         super("Norma IDE");
@@ -53,11 +55,26 @@ public class NormaSimulatorFrame extends JFrame {
             }
         });
 
+        setMacrosButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                int result = fileChooser.showOpenDialog(null);
+
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    machine.setMacrosPath(fileChooser.getSelectedFile().getAbsolutePath());
+                }
+            }
+        });
+
         JPanel registersPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         registersPanel.add(registersLabel);
         registersPanel.add(registersInput);
         registersPanel.add(setRegistersButton);
-        registersPanel.setBorder(BorderFactory.createTitledBorder("Configuração dos registradores"));
+        registersPanel.add(setMacrosButton);
+        registersPanel.setBorder(BorderFactory.createTitledBorder("Configurações"));
 
 
         JPanel contentPanel = new JPanel(new BorderLayout());
