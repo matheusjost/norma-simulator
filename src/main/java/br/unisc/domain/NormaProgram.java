@@ -19,4 +19,28 @@ public class NormaProgram {
 
         return hash;
     }
+
+    public static Map<String, String> interpretRegisters(String[] actualRegisters, String[] macroRegisters) {
+        Map<String, String> registersMap = new HashMap<>();
+        for (int i = 0; i < actualRegisters.length; i++) {
+            try {
+                registersMap.put(actualRegisters[i], macroRegisters[i]);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                registersMap.put(actualRegisters[i], "NO REGISTER");
+            }
+        }
+
+        return registersMap;
+    }
+
+    public static String[] setInterpretedRegistersToInstruction(String[] instructions, Map<String, String> registers) {
+        for (int i = 0; i < instructions.length; i++) {
+            for (Map.Entry<String, String> entry : registers.entrySet()) {
+                instructions[i] = instructions[i].replace("_" + entry.getValue(), "_" + entry.getKey());
+            }
+        }
+
+        return instructions;
+    }
+
 }

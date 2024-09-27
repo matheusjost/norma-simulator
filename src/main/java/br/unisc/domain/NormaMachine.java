@@ -11,7 +11,7 @@ public class NormaMachine {
     private Map<Integer, String> program;
     private String comput = "";
     private int instructionPointer;
-    private String macrosPath = "src/main/resources/macros/"; // TODO: parametrize this
+    private String macrosPath = "src/main/resources/macros/";
 
     public NormaMachine(JTextArea output) {
         registers = new HashMap<>();
@@ -40,6 +40,17 @@ public class NormaMachine {
         registers.clear();
     }
 
+    private boolean isInstructionPointerReset() {
+        return instructionPointer < 0;
+    }
+
+    private void setInstructionPointer(int instructionPointer) {
+        if (isInstructionPointerReset()) {
+            return;
+        }
+        this.instructionPointer = instructionPointer;
+    }
+
     private void clearInstructionPointer() {
         instructionPointer = -1;
     }
@@ -54,7 +65,11 @@ public class NormaMachine {
     }
 
     public boolean isZero(String register) {
-        return registers.get(register) == 0;
+        if (registers.containsKey(register)) {
+            return registers.get(register) == 0;
+        }
+        registerDoesNotExist(register);
+        return false;
     }
 
     public void add(String register) {
@@ -111,24 +126,63 @@ public class NormaMachine {
         clearComput();
     }
 
-    private boolean checkMacros(String op) {
-        File macroFile = new File(macrosPath + "\\" + op.toLowerCase() + ".norma");
-        if (macroFile.exists()) {
-            String[] content = readFile(macroFile);
-            if (content != null) {
-                NormaMachineState state = saveState();
+    private File findMacroFile(String prefix) {
+       File dir = new File(macrosPath);
 
-                clearInstructionPointer();
-                clearComput();
+       if (!dir.exists() || !dir.isDirectory()) {
+           output.setText("ERR - Diretório de macros não encontrado!");
+           setInstructionPointer(-1);
+           return null;
+       }
 
-                setProgram(NormaProgram.createMappedProgram(content));
-                runProgram();
+       File[] files = dir.listFiles((dir1, name) -> name.toLowerCase().startsWith(prefix.toLowerCase()) && name.endsWith(".norma"));
 
-                restoreState(state);
-                return true;
-            }
+       if (files != null && files.length > 0) {
+           return files[0];
+       }
 
+       return null;
+    }
+
+    private boolean runMacro(String[] content) {
+        if (content == null) {
             return false;
+        }
+
+        NormaMachineState state = saveState();
+
+        clearInstructionPointer();
+        clearComput();
+
+        setProgram(NormaProgram.createMappedProgram(content));
+        runProgram();
+
+        restoreState(state);
+
+        return true;
+    }
+
+    private String[] interpretMacro(File macroFile, String op) {
+        String macroFileName = macroFile.getName().split("\\.")[0];
+        String[] macroRegisters = macroFileName.split("_", 2)[1].toUpperCase().split("_");
+        String[] opRegisters = op.split("_");
+
+        String[] macroInstructions = readFile(macroFile);
+        if (macroInstructions == null) {
+            return null;
+        }
+
+        Map<String, String> mappedRegs = NormaProgram.interpretRegisters(opRegisters, macroRegisters);
+        return NormaProgram.setInterpretedRegistersToInstruction(macroInstructions, mappedRegs);
+    }
+
+    private boolean checkMacros(String operation) {
+        String[] opParts = operation.split("_", 2);
+
+        File macroFile = findMacroFile(opParts[0]);
+        if (macroFile != null && macroFile.exists()) {
+            String[] macroInstructions = interpretMacro(macroFile, opParts[1]);
+            return runMacro(macroInstructions);
         }
 
         return false;
@@ -185,17 +239,21 @@ public class NormaMachine {
                 int jumpIfZero = Integer.parseInt(parts[5]);
                 int jumpIfNotZero = Integer.parseInt(parts[8]);
                 if (isZero(registerToTest)) {
-                    instructionPointer = jumpIfZero;
+                    setInstructionPointer(jumpIfZero);
                 } else {
-                    instructionPointer = jumpIfNotZero;
+                    setInstructionPointer(jumpIfNotZero);
                 }
             }
             case "FAÇA" -> {
                 executeOperation(parts[2]);
-                instructionPointer = parts[3].equals("VÁ_PARA") ? Integer.parseInt(parts[4]) : instructionPointer + 1;
+                if (parts[3].equals("VÁ_PARA")) {
+                    setInstructionPointer(Integer.parseInt(parts[4]));
+                } else {
+                    instructionPointer++;
+                }
             }
             case "VÁ_PARA" -> {
-                instructionPointer = Integer.parseInt(parts[2]);
+                setInstructionPointer(Integer.parseInt(parts[2]));
             }
             default -> {
                 output.setText("ERR - Instrução desconhecida: " + instruction);
